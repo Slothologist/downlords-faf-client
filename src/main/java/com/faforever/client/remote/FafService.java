@@ -45,6 +45,7 @@ import com.google.common.eventbus.EventBus;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -55,6 +56,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -195,6 +197,12 @@ public class FafService {
         .collect(Collectors.toList()));
   }
 
+  @Async
+  @Cacheable(CacheNames.PERMISSION)
+  public CompletableFuture<Set<String>> getPermissions() {
+    return CompletableFuture.completedFuture(fafApiAccessor.getOwnPlayer().getPermissions());
+  }
+
   public void selectAvatar(AvatarBean avatar) {
     fafServerAccessor.selectAvatar(avatar == null ? null : avatar.getUrl());
     eventBus.post(new AvatarChangedEvent(avatar));
@@ -327,7 +335,7 @@ public class FafService {
       );
       review.setId(updatedReview.getId());
     } else {
-      fafApiAccessor.updateGameReview((GameReview) gameReview.setId(String.valueOf(review.getId())));
+      fafApiAccessor.updateGameReview((GameReview) gameReview.setId(review.getId()));
     }
     return CompletableFuture.completedFuture(null);
   }
@@ -348,7 +356,7 @@ public class FafService {
       );
       review.setId(updatedReview.getId());
     } else {
-      fafApiAccessor.updateModVersionReview((ModVersionReview) modVersionReview.setId(String.valueOf(review.getId())));
+      fafApiAccessor.updateModVersionReview((ModVersionReview) modVersionReview.setId(review.getId()));
     }
     return CompletableFuture.completedFuture(null);
   }
@@ -369,7 +377,7 @@ public class FafService {
       );
       review.setId(updatedReview.getId());
     } else {
-      fafApiAccessor.updateMapVersionReview((MapVersionReview) mapVersionReview.setId(String.valueOf(review.getId())));
+      fafApiAccessor.updateMapVersionReview((MapVersionReview) mapVersionReview.setId(review.getId()));
     }
 
     return CompletableFuture.completedFuture(null);
