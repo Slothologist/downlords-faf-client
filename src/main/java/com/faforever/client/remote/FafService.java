@@ -9,6 +9,7 @@ import com.faforever.client.api.dto.GamePlayerStats;
 import com.faforever.client.api.dto.GameReview;
 import com.faforever.client.api.dto.MapVersion;
 import com.faforever.client.api.dto.MapVersionReview;
+import com.faforever.client.api.dto.MeResult;
 import com.faforever.client.api.dto.ModVersionReview;
 import com.faforever.client.api.dto.PlayerAchievement;
 import com.faforever.client.chat.avatar.AvatarBean;
@@ -31,7 +32,6 @@ import com.faforever.client.remote.domain.GameEndedMessage;
 import com.faforever.client.remote.domain.GameLaunchMessage;
 import com.faforever.client.remote.domain.IceMessage;
 import com.faforever.client.remote.domain.IceServersServerMessage.IceServer;
-import com.faforever.client.remote.domain.LoginMessage;
 import com.faforever.client.remote.domain.PeriodType;
 import com.faforever.client.remote.domain.ServerMessage;
 import com.faforever.client.replay.Replay;
@@ -105,8 +105,22 @@ public class FafService {
     fafServerAccessor.sendGpgMessage(message);
   }
 
-  public CompletableFuture<LoginMessage> connectAndLogIn(String username, String password) {
-    return fafServerAccessor.connectAndLogIn(username, password);
+  @Async
+  public CompletableFuture<UserAndRefreshToken> connectAndLogIn(String username, String password, String refreshToken) {
+    String token;
+    if (refreshToken == null) {
+      token = fafApiAccessor.authorize(username, password);
+    } else {
+      fafApiAccessor.authorize(refreshToken);
+      token = refreshToken;
+    }
+    MeResult ownPlayer = fafApiAccessor.getOwnPlayer();
+    try {
+      fafServerAccessor.connectAndLogIn(token).get();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return CompletableFuture.completedFuture(new UserAndRefreshToken(token, ownPlayer));
   }
 
   public void disconnect() {

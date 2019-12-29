@@ -37,8 +37,8 @@ public class UserButtonController implements Controller<Node> {
   @Subscribe
   public void onLoginSuccessEvent(LoginSuccessEvent event) {
     Platform.runLater(() -> {
-      userButtonRoot.setText(event.getUsername());
-      userImageView.setImage(IdenticonUtil.createIdenticon(event.getUserId()));
+      userButtonRoot.setText(event.getUser().getUserName());
+      userImageView.setImage(IdenticonUtil.createIdenticon(event.getUser().getId()));
     });
   }
 

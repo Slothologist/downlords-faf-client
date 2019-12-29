@@ -7,13 +7,7 @@ import com.faforever.client.game.KnownFeaturedMod;
 import com.faforever.client.game.NewGameInfo;
 import com.faforever.client.i18n.I18n;
 import com.faforever.client.net.ConnectionState;
-import com.faforever.client.notification.Action;
 import com.faforever.client.notification.NotificationService;
-import com.faforever.client.notification.PersistentNotification;
-import com.faforever.client.notification.Severity;
-import com.faforever.client.rankedmatch.MatchmakerMessage;
-import com.faforever.client.rankedmatch.MatchmakerMessage.MatchmakerQueue;
-import com.faforever.client.rankedmatch.MatchmakerMessage.MatchmakerQueue.QueueName;
 import com.faforever.client.remote.domain.Avatar;
 import com.faforever.client.remote.domain.GameAccess;
 import com.faforever.client.remote.domain.GameInfoMessage;
@@ -22,13 +16,9 @@ import com.faforever.client.remote.domain.GameStatus;
 import com.faforever.client.remote.domain.IceServersServerMessage.IceServer;
 import com.faforever.client.remote.domain.LoginMessage;
 import com.faforever.client.remote.domain.PeriodType;
-import com.faforever.client.remote.domain.Player;
-import com.faforever.client.remote.domain.PlayersMessage;
-import com.faforever.client.remote.domain.RatingRange;
 import com.faforever.client.remote.domain.ServerMessage;
 import com.faforever.client.task.CompletableTask;
 import com.faforever.client.task.TaskService;
-import com.faforever.client.user.event.LoginSuccessEvent;
 import com.google.common.eventbus.EventBus;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -49,15 +39,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import static com.faforever.client.remote.domain.GameAccess.PASSWORD;
-import static com.faforever.client.remote.domain.GameAccess.PUBLIC;
 import static com.faforever.client.task.CompletableTask.Priority.HIGH;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 
 @Lazy
 @Component
@@ -98,93 +84,8 @@ public class MockFafServerAccessor implements FafServerAccessor {
   }
 
   @Override
-  public CompletableFuture<LoginMessage> connectAndLogIn(String username, String password) {
-    return taskService.submitTask(new CompletableTask<LoginMessage>(HIGH) {
-      @Override
-      protected LoginMessage call() throws Exception {
-        updateTitle(i18n.get("login.progress.message"));
-
-        Player player = new Player();
-        player.setId(4812);
-        player.setLogin(USER_NAME);
-        player.setClan("ABC");
-        player.setCountry("A1");
-        player.setGlobalRating(new float[]{1500, 220});
-        player.setLadderRating(new float[]{1500, 220});
-        player.setNumberOfGames(330);
-
-        PlayersMessage playersMessage = new PlayersMessage();
-        playersMessage.setPlayers(singletonList(player));
-
-        eventBus.post(new LoginSuccessEvent(username, password, player.getId()));
-
-        messageListeners.getOrDefault(playersMessage.getClass(), Collections.emptyList()).forEach(consumer -> consumer.accept(playersMessage));
-
-        timer.schedule(new TimerTask() {
-          @Override
-          public void run() {
-            UpdatedAchievementsMessage updatedAchievementsMessage = new UpdatedAchievementsMessage();
-            UpdatedAchievement updatedAchievement = new UpdatedAchievement();
-            updatedAchievement.setAchievementId("50260d04-90ff-45c8-816b-4ad8d7b97ecd");
-            updatedAchievement.setNewlyUnlocked(true);
-            updatedAchievementsMessage.setUpdatedAchievements(Arrays.asList(updatedAchievement));
-
-            messageListeners.getOrDefault(updatedAchievementsMessage.getClass(), Collections.emptyList()).forEach(consumer -> consumer.accept(updatedAchievementsMessage));
-          }
-        }, 7000);
-
-        timer.schedule(new TimerTask() {
-          @Override
-          public void run() {
-            MatchmakerMessage matchmakerServerMessage = new MatchmakerMessage();
-            matchmakerServerMessage.setQueues(singletonList(new MatchmakerQueue(QueueName.LADDER_1V1, null, singletonList(new RatingRange(100, 200)), singletonList(new RatingRange(100, 200)))));
-            messageListeners.getOrDefault(matchmakerServerMessage.getClass(), Collections.emptyList()).forEach(consumer -> consumer.accept(matchmakerServerMessage));
-          }
-        }, 7000);
-
-        List<GameInfoMessage> gameInfoMessages = Arrays.asList(
-            createGameInfo(1, "Mock game 500 - 800", PUBLIC, "faf", "scmp_010", 1, 6, "Mock user"),
-            createGameInfo(2, "Mock game 500+", PUBLIC, "faf", "scmp_011", 2, 6, "Mock user"),
-            createGameInfo(3, "Mock game +500", PUBLIC, "faf", "scmp_012", 3, 6, "Mock user"),
-            createGameInfo(4, "Mock game <1000", PUBLIC, "faf", "scmp_013", 4, 6, "Mock user"),
-            createGameInfo(5, "Mock game >1000", PUBLIC, "faf", "scmp_014", 5, 6, "Mock user"),
-            createGameInfo(6, "Mock game ~600", PASSWORD, "faf", "scmp_015", 6, 6, "Mock user"),
-            createGameInfo(7, "Mock game 7", PASSWORD, "faf", "scmp_016", 7, 6, "Mock user")
-        );
-
-        gameInfoMessages.forEach(gameInfoMessage ->
-            messageListeners.getOrDefault(gameInfoMessage.getClass(), Collections.emptyList())
-                .forEach(consumer -> consumer.accept(gameInfoMessage)));
-
-        notificationService.addNotification(
-            new PersistentNotification(
-                "How about a long-running (7s) mock task?",
-                Severity.INFO,
-                Arrays.asList(
-                    new Action("Execute", event ->
-                        taskService.submitTask(new CompletableTask<Void>(HIGH) {
-                          @Override
-                          protected Void call() throws Exception {
-                            updateTitle("Mock task");
-                            Thread.sleep(2000);
-                            for (int i = 0; i < 5; i++) {
-                              updateProgress(i, 5);
-                              Thread.sleep(1000);
-                            }
-                            return null;
-                          }
-                        })),
-                    new Action("Nope")
-                )
-            )
-        );
-
-        LoginMessage sessionInfo = new LoginMessage();
-        sessionInfo.setId(123);
-        sessionInfo.setLogin(USER_NAME);
-        return sessionInfo;
-      }
-    }).getFuture();
+  public CompletableFuture<LoginMessage> connectAndLogIn(String refreshToken) {
+    return null;
   }
 
   @Override

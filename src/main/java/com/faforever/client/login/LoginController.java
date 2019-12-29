@@ -18,7 +18,6 @@ import com.faforever.client.update.UpdateInfo;
 import com.faforever.client.update.Version;
 import com.faforever.client.user.UserService;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import com.jfoenix.controls.JFXButton;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -45,8 +44,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
 
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -229,13 +226,6 @@ public class LoginController implements Controller<Node> {
     setShowLoginProgress(false);
 
     LoginPrefs loginPrefs = preferencesService.getPreferences().getLogin();
-    String username = loginPrefs.getUsername();
-    String password = loginPrefs.getPassword();
-    boolean isAutoLogin = loginPrefs.getAutoLogin();
-
-    // Fill the form even if autoLogin is true, since user may cancel the login
-    usernameInput.setText(Strings.nullToEmpty(username));
-    autoLoginCheckBox.setSelected(isAutoLogin);
 
     initializeFuture.thenRun(() -> {
       if (loginAllowed == null) {
@@ -243,13 +233,14 @@ public class LoginController implements Controller<Node> {
         loginAllowed = true;
       }
 
-      if (loginAllowed && loginPrefs.getAutoLogin() && !isNullOrEmpty(username) && !isNullOrEmpty(password)) {
-        login(username, password, true);
-      } else if (isNullOrEmpty(username)) {
-        usernameInput.requestFocus();
-      } else {
-        passwordInput.requestFocus();
-      }
+      String refreshToken = loginPrefs.getRefreshToken();
+      Platform.runLater(() -> {
+        if (refreshToken != null) {
+          autoLogin(refreshToken);
+        } else {
+          usernameInput.requestFocus();
+        }
+      });
     });
   }
 
@@ -259,13 +250,17 @@ public class LoginController implements Controller<Node> {
     loginButton.setDisable(show);
   }
 
-  private void login(String username, String password, boolean autoLogin) {
+  private void autoLogin(String refreshToken) {
+    login(null, null, refreshToken);
+  }
+
+  private void login(String username, String password, String refreshToken) {
     setShowLoginProgress(true);
-    if (EMAIL_REGEX.matcher(username).matches()) {
+    if (username != null && EMAIL_REGEX.matcher(username).matches()) {
       onLoginWithEmail();
       return;
     }
-    userService.login(username, password, autoLogin)
+    userService.login(username, password, refreshToken, autoLoginCheckBox.isSelected())
         .exceptionally(throwable -> {
           onLoginFailed(throwable);
           return null;
@@ -300,8 +295,6 @@ public class LoginController implements Controller<Node> {
     String username = usernameInput.getText();
     String password = passwordInput.getText();
 
-    boolean autoLogin = autoLoginCheckBox.isSelected();
-
     Server server = clientProperties.getServer();
     server.setHost(serverHostField.getText());
     server.setPort(Integer.parseInt(serverPortField.getText()));
@@ -316,7 +309,7 @@ public class LoginController implements Controller<Node> {
 
     clientProperties.getApi().setBaseUrl(apiBaseUrlField.getText());
 
-    login(username, password, autoLogin);
+    login(username, password, null);
   }
 
   public void onCancelLoginButtonClicked() {

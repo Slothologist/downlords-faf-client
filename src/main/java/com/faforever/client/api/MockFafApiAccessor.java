@@ -73,7 +73,12 @@ public class MockFafApiAccessor implements FafApiAccessor {
   }
 
   @Override
-  public void authorize(int playerId, String username, String password) {
+  public String authorize(String username, String password) {
+    return null;
+  }
+
+  @Override
+  public void authorize(String refreshToken) {
 
   }
 

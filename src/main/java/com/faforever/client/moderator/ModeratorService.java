@@ -2,25 +2,17 @@ package com.faforever.client.moderator;
 
 import com.faforever.client.remote.FafService;
 import com.faforever.client.remote.domain.PeriodType;
+import com.faforever.client.user.UserService;
 import javafx.beans.binding.Bindings;
 import javafx.beans.value.ObservableBooleanValue;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
 public class ModeratorService {
   private final FafService fafService;
-  private ObservableList<String> permissions = FXCollections.observableArrayList();
-
-  public CompletableFuture<Set<String>> getPermissions() {
-    return fafService.getPermissions();
-  }
+  private final UserService userService;
 
   public void banPlayer(int playerId, int duration, PeriodType periodType, String reason) {
     fafService.banPlayer(playerId, duration, periodType, reason);
@@ -39,7 +31,6 @@ public class ModeratorService {
   }
 
   public ObservableBooleanValue permissionsContainBinding(String permission) {
-    getPermissions().thenAccept(strings -> permissions.setAll(strings));
-    return Bindings.createBooleanBinding(() -> permissions.contains(permission), permissions);
+    return Bindings.createBooleanBinding(() -> userService.getOwnUser().getPermissions().contains(permission), userService.ownUserProperty());
   }
 }

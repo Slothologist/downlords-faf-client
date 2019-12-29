@@ -49,7 +49,9 @@ public interface FafApiAccessor {
 
   AchievementDefinition getAchievementDefinition(String achievementId);
 
-  void authorize(int playerId, String username, String password);
+  String authorize(String username, String password);
+
+  void authorize(String refreshToken);
 
   List<Mod> getMods();
 

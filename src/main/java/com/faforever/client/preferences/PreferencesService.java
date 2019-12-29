@@ -165,6 +165,9 @@ public class PreferencesService implements InitializingBean {
       preferences.getForgedAlliance().setInstallationPath(preferences.getForgedAlliance().getPath());
       preferences.getForgedAlliance().setPath(null);
     }
+    preferences.getLogin().setUsername("");
+    preferences.getLogin().setPassword("");
+    preferences.getLogin().setAutoLogin(false);
     storeInBackground();
   }
 
