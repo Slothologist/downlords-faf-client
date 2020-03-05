@@ -106,7 +106,7 @@ public class FafService {
   }
 
   @Async
-  public CompletableFuture<UserAndRefreshToken> connectAndLogIn(String username, String password, String refreshToken) {
+  public CompletableFuture<UserAndRefreshToken> logIn(String username, String password, String refreshToken) {
     String token;
     if (refreshToken == null) {
       token = fafApiAccessor.authorize(username, password);
@@ -115,12 +115,17 @@ public class FafService {
       token = refreshToken;
     }
     MeResult ownPlayer = fafApiAccessor.getOwnPlayer();
+    return CompletableFuture.completedFuture(new UserAndRefreshToken(token, ownPlayer));
+  }
+
+  @Async
+  public CompletableFuture<UserAndRefreshToken> connectServer(UserAndRefreshToken userAndRefreshToken) {
     try {
-      fafServerAccessor.connectAndLogIn(token).get();
+      fafServerAccessor.connectAndLogIn(userAndRefreshToken.getRefreshToken()).get();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    return CompletableFuture.completedFuture(new UserAndRefreshToken(token, ownPlayer));
+    return CompletableFuture.completedFuture(userAndRefreshToken);
   }
 
   public void disconnect() {

@@ -16,7 +16,8 @@ public class MeResult implements ElideEntity {
   public static final String TYPE_NAME = "me";
 
   @Id
-  private String userId;
+  private String id;
+  private Integer userId;
   private String userName;
   private String email;
   private Clan clan;
@@ -25,11 +26,11 @@ public class MeResult implements ElideEntity {
 
   @Override
   public String getId() {
-    return userId;
+    return id;
   }
 
   public static class Clan {
-    private Integer id;
+    private String id;
     private Integer membershipId;
     private String tag;
     private String name;

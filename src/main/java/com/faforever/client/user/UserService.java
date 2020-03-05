@@ -56,18 +56,18 @@ public class UserService implements InitializingBean {
   public CompletableFuture<Void> login(String username, String password, String refreshToken, boolean autoLogin) {
     this.password = password;
 
-    loginFuture = fafService.connectAndLogIn(username, password, refreshToken)
-        .thenAccept(userAndRefreshToken -> {
+    loginFuture = fafService.logIn(username, password, refreshToken)
+        .thenApply(userAndRefreshToken -> {
           ownUser.set(userAndRefreshToken.getUser());
           // Because of different case (upper/lower)
           String newRefreshToken = (autoLogin || refreshToken != null) ? userAndRefreshToken.getRefreshToken() : null;
           preferencesService.getPreferences().getLogin().setRefreshToken(newRefreshToken);
           preferencesService.storeInBackground();
-          applicationContext.publishEvent(new LoginSuccessEvent(userAndRefreshToken.getUser()));
+          return userAndRefreshToken;
         })
-        .whenComplete((aVoid, throwable) -> {
-          loginFuture = null;
-        });
+        .thenCompose(fafService::connectServer)
+        .thenAccept(userAndRefreshToken -> eventBus.post(new LoginSuccessEvent(userAndRefreshToken.getUser())))
+        .whenComplete((aVoid, throwable) -> loginFuture = null);
     return loginFuture;
   }
 

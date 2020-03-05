@@ -4,6 +4,7 @@ import com.faforever.client.chat.UserInfoWindowController;
 import com.faforever.client.fx.Controller;
 import com.faforever.client.player.PlayerService;
 import com.faforever.client.theme.UiService;
+import com.faforever.client.user.UserService;
 import com.faforever.client.user.event.LogOutRequestEvent;
 import com.faforever.client.user.event.LoginSuccessEvent;
 import com.faforever.client.util.IdenticonUtil;
@@ -26,6 +27,7 @@ public class UserButtonController implements Controller<Node> {
 
   private final EventBus eventBus;
   private final PlayerService playerService;
+  private final UserService userService;
   private final UiService uiService;
   public MenuButton userButtonRoot;
   public ImageView userImageView;
